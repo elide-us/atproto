@@ -1,8 +1,16 @@
 import { Router } from 'express'
-import { oauthProtectedResourceMetadataSchema } from '@atproto/oauth-provider'
-import { AppContext } from './context'
+import {
+  HandleUnavailableError,
+  InvalidRequestError,
+  SecondAuthenticationFactorRequiredError,
+  UseDpopNonceError,
+  oauthMiddleware,
+  oauthProtectedResourceMetadataSchema,
+} from '@atproto/oauth-provider'
+import { AppContext } from './context.js'
+import { oauthLogger, reqSerializer } from './logger.js'
 
-export const createRouter = ({ authProvider, cfg }: AppContext): Router => {
+export const createRouter = ({ oauthProvider, cfg }: AppContext): Router => {
   const router = Router()
 
   const oauthProtectedResourceMetadata =
@@ -28,9 +36,29 @@ export const createRouter = ({ authProvider, cfg }: AppContext): Router => {
     res.status(200).json(oauthProtectedResourceMetadata)
   })
 
-  if (authProvider) {
-    router.use(authProvider.createRouter())
+  if (oauthProvider) {
+    router.use(
+      oauthMiddleware(oauthProvider, {
+        onError: (req, res, err, msg) => {
+          if (!ignoreError(err)) {
+            oauthLogger.error({ err, req: reqSerializer(req) }, msg)
+          }
+        },
+      }),
+    )
   }
 
   return router
+}
+
+function ignoreError(err: unknown): boolean {
+  if (err instanceof InvalidRequestError) {
+    return err.error_description === 'Invalid identifier or password'
+  }
+
+  return (
+    err instanceof UseDpopNonceError ||
+    err instanceof HandleUnavailableError ||
+    err instanceof SecondAuthenticationFactorRequiredError
+  )
 }

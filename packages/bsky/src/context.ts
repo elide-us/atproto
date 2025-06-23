@@ -1,4 +1,5 @@
 import * as plc from '@did-plc/lib'
+import { Etcd3 } from 'etcd3'
 import express from 'express'
 import { Dispatcher } from 'undici'
 import { AtpAgent } from '@atproto/api'
@@ -8,10 +9,11 @@ import { AuthVerifier } from './auth-verifier'
 import { BsyncClient } from './bsync'
 import { ServerConfig } from './config'
 import { CourierClient } from './courier'
-import { DataPlaneClient } from './data-plane/client'
+import { DataPlaneClient, HostList } from './data-plane/client'
 import { FeatureGates } from './feature-gates'
 import { Hydrator } from './hydration/hydrator'
 import { httpLogger as log } from './logger'
+import { StashClient } from './stash'
 import {
   ParsedLabelers,
   defaultLabelerHeader,
@@ -23,7 +25,9 @@ export class AppContext {
   constructor(
     private opts: {
       cfg: ServerConfig
+      etcd: Etcd3 | undefined
       dataplane: DataPlaneClient
+      dataplaneHostList: HostList
       searchAgent: AtpAgent | undefined
       suggestionsAgent: AtpAgent | undefined
       topicsAgent: AtpAgent | undefined
@@ -32,6 +36,7 @@ export class AppContext {
       signingKey: Keypair
       idResolver: IdResolver
       bsyncClient: BsyncClient
+      stashClient: StashClient
       courierClient: CourierClient | undefined
       authVerifier: AuthVerifier
       featureGates: FeatureGates
@@ -43,8 +48,16 @@ export class AppContext {
     return this.opts.cfg
   }
 
+  get etcd() {
+    return this.opts.etcd
+  }
+
   get dataplane(): DataPlaneClient {
     return this.opts.dataplane
+  }
+
+  get dataplaneHostList(): HostList {
+    return this.opts.dataplaneHostList
   }
 
   get searchAgent(): AtpAgent | undefined {
@@ -81,6 +94,10 @@ export class AppContext {
 
   get bsyncClient(): BsyncClient {
     return this.opts.bsyncClient
+  }
+
+  get stashClient(): StashClient {
+    return this.opts.stashClient
   }
 
   get courierClient(): CourierClient | undefined {

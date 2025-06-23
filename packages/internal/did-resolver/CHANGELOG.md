@@ -1,5 +1,34 @@
 # @atproto-labs/did-resolver
 
+## 0.2.0
+
+### Minor Changes
+
+- [#3976](https://github.com/bluesky-social/atproto/pull/3976) [`90b4775fc`](https://github.com/bluesky-social/atproto/commit/90b4775fc9c6959171bc12b961ce9421cc14d6ee) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Remove export of internal utilities
+
+## 0.1.13
+
+### Patch Changes
+
+- Updated dependencies [[`5050b6550`](https://github.com/bluesky-social/atproto/commit/5050b6550e07e71b0a524eda0b71b837583294d4), [`5050b6550`](https://github.com/bluesky-social/atproto/commit/5050b6550e07e71b0a524eda0b71b837583294d4)]:
+  - @atproto-labs/pipe@0.1.1
+  - @atproto-labs/fetch@0.2.3
+
+## 0.1.12
+
+### Patch Changes
+
+- Updated dependencies [[`0d77d1b55`](https://github.com/bluesky-social/atproto/commit/0d77d1b550a58117aee8f7f1e2be24d255ade9e4), [`0d77d1b55`](https://github.com/bluesky-social/atproto/commit/0d77d1b550a58117aee8f7f1e2be24d255ade9e4)]:
+  - @atproto-labs/simple-store@0.2.0
+  - @atproto-labs/simple-store-memory@0.1.3
+
+## 0.1.11
+
+### Patch Changes
+
+- Updated dependencies [[`850e39843`](https://github.com/bluesky-social/atproto/commit/850e39843cb0ec9ea716675f7568c0c601f45e29), [`850e39843`](https://github.com/bluesky-social/atproto/commit/850e39843cb0ec9ea716675f7568c0c601f45e29)]:
+  - @atproto-labs/fetch@0.2.2
+
 ## 0.1.10
 
 ### Patch Changes

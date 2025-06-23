@@ -1,5 +1,53 @@
 # @atproto/lex-cli
 
+## 0.8.2
+
+### Patch Changes
+
+- [#3906](https://github.com/bluesky-social/atproto/pull/3906) [`d880665e6`](https://github.com/bluesky-social/atproto/commit/d880665e63100e9e06b0ef2d287e5c3e0272e7ca) Thanks [@mozzius](https://github.com/mozzius)! - Fix type generation for arrays of strings with known values
+
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [[`cc485d296`](https://github.com/bluesky-social/atproto/commit/cc485d29638488928b5efec3d4b0627040589812)]:
+  - @atproto/lexicon@0.4.11
+
+## 0.8.0
+
+### Minor Changes
+
+- [#3715](https://github.com/bluesky-social/atproto/pull/3715) [`23462184d`](https://github.com/bluesky-social/atproto/commit/23462184dc941ba2fc3b4d054985a53715585020) Thanks [@knotbin](https://github.com/knotbin)! - Fix conflicts between lexicon in gen-api, record types in index file now named ComExampleNameRecord instead of NameRecord
+
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/lexicon@0.4.10
+
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [[`670b6b5de`](https://github.com/bluesky-social/atproto/commit/670b6b5de2bf91e6944761c98eb1126fb6a681ee)]:
+  - @atproto/syntax@0.4.0
+  - @atproto/lexicon@0.4.9
+
+## 0.7.0
+
+### Minor Changes
+
+- [#3282](https://github.com/bluesky-social/atproto/pull/3282) [`c501715b0`](https://github.com/bluesky-social/atproto/commit/c501715b0dbe6daad962e1df80986521d00f65aa) Thanks [@tcyrus](https://github.com/tcyrus)! - Fix type-only imports in codegen
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [[`850e39843`](https://github.com/bluesky-social/atproto/commit/850e39843cb0ec9ea716675f7568c0c601f45e29)]:
+  - @atproto/syntax@0.3.4
+  - @atproto/lexicon@0.4.8
+
 ## 0.6.1
 
 ### Patch Changes

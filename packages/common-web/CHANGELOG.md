@@ -1,5 +1,17 @@
 # @atproto/common-web
 
+## 0.4.2
+
+### Patch Changes
+
+- [#3798](https://github.com/bluesky-social/atproto/pull/3798) [`cc485d296`](https://github.com/bluesky-social/atproto/commit/cc485d29638488928b5efec3d4b0627040589812) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Optimize parsing of `CID` values
+
+## 0.4.1
+
+### Patch Changes
+
+- [#3672](https://github.com/bluesky-social/atproto/pull/3672) [`4db923ca1`](https://github.com/bluesky-social/atproto/commit/4db923ca1c4fadd31d41c851933659e5186ee144) Thanks [@dholms](https://github.com/dholms)! - Add CAR Header type
+
 ## 0.4.0
 
 ### Minor Changes

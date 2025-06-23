@@ -1,15 +1,15 @@
 import { relative as getRelativePath } from 'node:path/posix'
 import { SourceFile, VariableDeclarationKind } from 'ts-morph'
 import {
-  LexArray,
-  LexBlob,
-  LexBytes,
-  LexCidLink,
-  LexIpldType,
-  LexObject,
-  LexPrimitive,
-  LexToken,
-  LexUserType,
+  type LexArray,
+  type LexBlob,
+  type LexBytes,
+  type LexCidLink,
+  type LexIpldType,
+  type LexObject,
+  type LexPrimitive,
+  type LexToken,
+  type LexUserType,
   Lexicons,
 } from '@atproto/lexicon'
 import { toCamelCase, toScreamingSnakeCase, toTitleCase } from './util'
@@ -33,7 +33,10 @@ export function genCommonImports(file: SourceFile, baseNsid: string) {
     .addImportDeclaration({
       moduleSpecifier: '@atproto/lexicon',
     })
-    .addNamedImports([{ name: 'ValidationResult' }, { name: 'BlobRef' }])
+    .addNamedImports([
+      { name: 'ValidationResult', isTypeOnly: true },
+      { name: 'BlobRef' },
+    ])
 
   //= import {CID} from 'multiformats/cid'
   file
@@ -52,7 +55,7 @@ export function genCommonImports(file: SourceFile, baseNsid: string) {
     })
     .addNamedImports([{ name: 'validate', alias: '_validate' }])
 
-  //= import { $Typed, is$typed as _is$typed, OmitKey } from '../[...]/util.ts'
+  //= import { type $Typed, is$typed as _is$typed, type OmitKey } from '../[...]/util.ts'
   file
     .addImportDeclaration({
       moduleSpecifier: `${baseNsid
@@ -61,9 +64,9 @@ export function genCommonImports(file: SourceFile, baseNsid: string) {
         .join('/')}/util`,
     })
     .addNamedImports([
-      { name: '$Typed' },
+      { name: '$Typed', isTypeOnly: true },
       { name: 'is$typed', alias: '_is$typed' },
-      { name: 'OmitKey' },
+      { name: 'OmitKey', isTypeOnly: true },
     ])
 
   // tsc adds protection against circular imports, which hurts bundle size.
@@ -664,7 +667,7 @@ function makeType(
   const types = ([] as string[]).concat(_types)
   if (opts?.nullable) types.push('null')
   const arr = opts?.array ? '[]' : ''
-  if (types.length === 1) return `${types[0]}${arr}`
+  if (types.length === 1) return `(${types[0]})${arr}`
   if (arr) return `(${types.join(' | ')})${arr}`
   return types.join(' | ')
 }

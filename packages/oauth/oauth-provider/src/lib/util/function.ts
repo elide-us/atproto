@@ -6,19 +6,30 @@
  *   particularly useful when the function is a member of a "private" object.
  */
 export async function callAsync<F extends (...args: any[]) => unknown>(
-  this: ThisParameterType<F>,
   fn: F,
   ...args: Parameters<F>
 ): Promise<Awaited<ReturnType<F>>>
 export async function callAsync<F extends (...args: any[]) => unknown>(
-  this: ThisParameterType<F>,
   fn?: F,
   ...args: Parameters<F>
 ): Promise<Awaited<ReturnType<F>> | undefined>
 export async function callAsync<F extends (...args: any[]) => unknown>(
-  this: ThisParameterType<F>,
   fn?: F,
   ...args: Parameters<F>
 ): Promise<Awaited<ReturnType<F>> | undefined> {
   return (await fn?.(...args)) as Awaited<ReturnType<F>> | undefined
+}
+
+export function invokeOnce<T extends (this: any, ...a: any[]) => any>(
+  fn: T,
+): T {
+  let fnNullable: T | null = fn
+  return function (...args) {
+    if (fnNullable) {
+      const fn = fnNullable
+      fnNullable = null
+      return fn.call(this, ...args)
+    }
+    throw new Error('Function called multiple times')
+  } as T
 }

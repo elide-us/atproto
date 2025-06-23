@@ -1,5 +1,113 @@
 # @atproto/sync
 
+## 0.1.27
+
+### Patch Changes
+
+- Updated dependencies [[`5fccbd2a1`](https://github.com/bluesky-social/atproto/commit/5fccbd2a14420e4a7c6f56ad9af4ecfe15a971e3)]:
+  - @atproto/repo@0.8.3
+
+## 0.1.26
+
+### Patch Changes
+
+- Updated dependencies [[`8bd45e2f8`](https://github.com/bluesky-social/atproto/commit/8bd45e2f898a87b3550c7f4a0c8312fad9cb4736)]:
+  - @atproto/repo@0.8.2
+
+## 0.1.25
+
+### Patch Changes
+
+- Updated dependencies [[`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`b675fbbf1`](https://github.com/bluesky-social/atproto/commit/b675fbbf17e000fad2b38a52db550702830a807d), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c)]:
+  - @atproto/xrpc-server@0.8.0
+
+## 0.1.24
+
+### Patch Changes
+
+- Updated dependencies [[`9214bd017`](https://github.com/bluesky-social/atproto/commit/9214bd01705381aed6b5bde2900d6dc5486b6e9f)]:
+  - @atproto/xrpc-server@0.7.19
+
+## 0.1.23
+
+### Patch Changes
+
+- Updated dependencies [[`cc485d296`](https://github.com/bluesky-social/atproto/commit/cc485d29638488928b5efec3d4b0627040589812), [`b5afb723b`](https://github.com/bluesky-social/atproto/commit/b5afb723be392d236799bbcb6a55956bd12316ba)]:
+  - @atproto/lexicon@0.4.11
+  - @atproto/xrpc-server@0.7.18
+  - @atproto/common@0.4.11
+  - @atproto/identity@0.4.8
+  - @atproto/repo@0.8.1
+
+## 0.1.22
+
+### Patch Changes
+
+- Updated dependencies [[`45354c84f`](https://github.com/bluesky-social/atproto/commit/45354c84f898d79f58c14b5c0da3661beb7353f9)]:
+  - @atproto/xrpc-server@0.7.17
+
+## 0.1.21
+
+### Patch Changes
+
+- Updated dependencies [[`da168588d`](https://github.com/bluesky-social/atproto/commit/da168588de59e5048d255866205bd16c5ab5f95c)]:
+  - @atproto/xrpc-server@0.7.16
+
+## 0.1.20
+
+### Patch Changes
+
+- Updated dependencies [[`4db923ca1`](https://github.com/bluesky-social/atproto/commit/4db923ca1c4fadd31d41c851933659e5186ee144), [`4db923ca1`](https://github.com/bluesky-social/atproto/commit/4db923ca1c4fadd31d41c851933659e5186ee144)]:
+  - @atproto/repo@0.8.0
+  - @atproto/common@0.4.10
+  - @atproto/identity@0.4.7
+  - @atproto/lexicon@0.4.10
+  - @atproto/xrpc-server@0.7.15
+
+## 0.1.19
+
+### Patch Changes
+
+- Updated dependencies [[`bdbd3c3e3`](https://github.com/bluesky-social/atproto/commit/bdbd3c3e3f8fe8476a3fecac73810554846c938f), [`bdbd3c3e3`](https://github.com/bluesky-social/atproto/commit/bdbd3c3e3f8fe8476a3fecac73810554846c938f)]:
+  - @atproto/repo@0.7.3
+  - @atproto/common@0.4.9
+  - @atproto/xrpc-server@0.7.14
+
+## 0.1.18
+
+### Patch Changes
+
+- Updated dependencies [[`670b6b5de`](https://github.com/bluesky-social/atproto/commit/670b6b5de2bf91e6944761c98eb1126fb6a681ee)]:
+  - @atproto/syntax@0.4.0
+  - @atproto/lexicon@0.4.9
+  - @atproto/repo@0.7.2
+  - @atproto/xrpc-server@0.7.13
+
+## 0.1.17
+
+### Patch Changes
+
+- [#3599](https://github.com/bluesky-social/atproto/pull/3599) [`b20907a70`](https://github.com/bluesky-social/atproto/commit/b20907a7056970ab627e6c661882cb16491801e2) Thanks [@mozzius](https://github.com/mozzius)! - Fix types of `FirehoseOptions`
+
+- [`d96b03956`](https://github.com/bluesky-social/atproto/commit/d96b03956d5c26c238f586c6bdf257c080f12746) Thanks [@devinivy](https://github.com/devinivy)! - Support firehose sync event
+
+## 0.1.16
+
+### Patch Changes
+
+- Updated dependencies [[`850e39843`](https://github.com/bluesky-social/atproto/commit/850e39843cb0ec9ea716675f7568c0c601f45e29)]:
+  - @atproto/syntax@0.3.4
+  - @atproto/lexicon@0.4.8
+  - @atproto/repo@0.7.1
+  - @atproto/xrpc-server@0.7.12
+
+## 0.1.15
+
+### Patch Changes
+
+- Updated dependencies [[`7e3678c08`](https://github.com/bluesky-social/atproto/commit/7e3678c089d2faa1a884a52a4fb80b8116c9854f)]:
+  - @atproto/repo@0.7.0
+
 ## 0.1.14
 
 ### Patch Changes

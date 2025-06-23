@@ -25,6 +25,7 @@ export type Post = RecordInfo<PostRecord> & {
   violatesEmbeddingRules: boolean
   hasThreadGate: boolean
   hasPostGate: boolean
+  tags: Set<string>
 }
 export type Posts = HydrationMap<Post>
 
@@ -37,6 +38,7 @@ export type PostViewerState = {
 export type PostViewerStates = HydrationMap<PostViewerState>
 
 export type ThreadContext = {
+  // Whether the root author has liked the post.
   like?: string
 }
 
@@ -112,6 +114,7 @@ export class FeedHydrator {
       const violatesEmbeddingRules = res.meta[i].violatesEmbeddingRules
       const hasThreadGate = res.meta[i].hasThreadGate
       const hasPostGate = res.meta[i].hasPostGate
+      const tags = new Set<string>(res.records[i].tags ?? [])
       return acc.set(
         uri,
         record
@@ -121,6 +124,7 @@ export class FeedHydrator {
               violatesEmbeddingRules,
               hasThreadGate,
               hasPostGate,
+              tags,
             }
           : null,
       )
@@ -206,9 +210,15 @@ export class FeedHydrator {
     }, new HydrationMap<ThreadContext>())
   }
 
-  async getPostAggregates(refs: ItemRef[]): Promise<PostAggs> {
+  async getPostAggregates(
+    refs: ItemRef[],
+    viewer: string | null,
+  ): Promise<PostAggs> {
     if (!refs.length) return new HydrationMap<PostAgg>()
-    const counts = await this.dataplane.getInteractionCounts({ refs })
+    const counts = await this.dataplane.getInteractionCounts({
+      refs,
+      skipCacheForDids: viewer ? [viewer] : undefined,
+    })
     return refs.reduce((acc, { uri }, i) => {
       return acc.set(uri, {
         likes: counts.likes[i] ?? 0,
@@ -250,9 +260,15 @@ export class FeedHydrator {
     }, new HydrationMap<FeedGenViewerState>())
   }
 
-  async getFeedGenAggregates(refs: ItemRef[]): Promise<FeedGenAggs> {
+  async getFeedGenAggregates(
+    refs: ItemRef[],
+    viewer: string | null,
+  ): Promise<FeedGenAggs> {
     if (!refs.length) return new HydrationMap<FeedGenAgg>()
-    const counts = await this.dataplane.getInteractionCounts({ refs })
+    const counts = await this.dataplane.getInteractionCounts({
+      refs,
+      skipCacheForDids: viewer ? [viewer] : undefined,
+    })
     return refs.reduce((acc, { uri }, i) => {
       return acc.set(uri, {
         likes: counts.likes[i] ?? 0,

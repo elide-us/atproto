@@ -15,6 +15,7 @@ import adminGetRecords from './moderation/getRecords'
 import getRepo from './moderation/getRepo'
 import getReporterStats from './moderation/getReporterStats'
 import getRepos from './moderation/getRepos'
+import getSubjects from './moderation/getSubjects'
 import queryEvents from './moderation/queryEvents'
 import queryStatuses from './moderation/queryStatuses'
 import searchRepos from './moderation/searchRepos'
@@ -34,6 +35,9 @@ import addMember from './team/addMember'
 import deleteMember from './team/deleteMember'
 import listMembers from './team/listMembers'
 import updateMember from './team/updateMember'
+import grantVerifications from './verification/grantVerifications'
+import listVerifications from './verification/listVerifications'
+import revokeVerifications from './verification/revokeVerifications'
 
 export * as health from './health'
 
@@ -74,5 +78,9 @@ export default function (server: Server, ctx: AppContext) {
   listOptions(server, ctx)
   removeOptions(server, ctx)
   getReporterStats(server, ctx)
+  getSubjects(server, ctx)
+  grantVerifications(server, ctx)
+  revokeVerifications(server, ctx)
+  listVerifications(server, ctx)
   return server
 }

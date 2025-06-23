@@ -2,10 +2,14 @@
  * GENERATED CODE - DO NOT MODIFY
  */
 import { HeadersMap, XRPCError } from '@atproto/xrpc'
-import { ValidationResult, BlobRef } from '@atproto/lexicon'
+import { type ValidationResult, BlobRef } from '@atproto/lexicon'
 import { CID } from 'multiformats/cid'
 import { validate as _validate } from '../../../../lexicons'
-import { $Typed, is$typed as _is$typed, OmitKey } from '../../../../util'
+import {
+  type $Typed,
+  is$typed as _is$typed,
+  type OmitKey,
+} from '../../../../util'
 
 const is$typed = _is$typed,
   validate = _validate
@@ -19,10 +23,6 @@ export interface QueryParams {
   /** The number of records to return. */
   limit?: number
   cursor?: string
-  /** DEPRECATED: The lowest sort-ordered rkey to start from (exclusive) */
-  rkeyStart?: string
-  /** DEPRECATED: The highest sort-ordered rkey to stop at (exclusive) */
-  rkeyEnd?: string
   /** Flag to reverse the order of the returned records. */
   reverse?: boolean
 }

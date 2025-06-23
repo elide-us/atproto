@@ -1,5 +1,87 @@
 # @atproto/xrpc-server
 
+## 0.8.0
+
+### Minor Changes
+
+- [#3886](https://github.com/bluesky-social/atproto/pull/3886) [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Remove `bypassSecret` and `bypassIps` from rate limiter options.
+
+- [#3886](https://github.com/bluesky-social/atproto/pull/3886) [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Now applies global rate limiter to every single route. Previously, the global rate limiter was not applied if a route defined a local rate limit option.
+
+### Patch Changes
+
+- [#3884](https://github.com/bluesky-social/atproto/pull/3884) [`b675fbbf1`](https://github.com/bluesky-social/atproto/commit/b675fbbf17e000fad2b38a52db550702830a807d) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Return an error if the wrong HTTP verb is used for a known XRPC method, even when a `catchall` is provided.
+
+- [#3886](https://github.com/bluesky-social/atproto/pull/3886) [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Add optional `bypass` callback to global rate limits options
+
+- [#3886](https://github.com/bluesky-social/atproto/pull/3886) [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Refactor route rate limiter builder
+
+- [#3886](https://github.com/bluesky-social/atproto/pull/3886) [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Performance improvement: avoid computing rate limit bypass multiple times per request
+
+## 0.7.19
+
+### Patch Changes
+
+- [#3699](https://github.com/bluesky-social/atproto/pull/3699) [`9214bd017`](https://github.com/bluesky-social/atproto/commit/9214bd01705381aed6b5bde2900d6dc5486b6e9f) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Improve logging of XRPC errors
+
+## 0.7.18
+
+### Patch Changes
+
+- [#3700](https://github.com/bluesky-social/atproto/pull/3700) [`b5afb723b`](https://github.com/bluesky-social/atproto/commit/b5afb723be392d236799bbcb6a55956bd12316ba) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Consistenlty log errors
+
+- Updated dependencies [[`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`cc485d296`](https://github.com/bluesky-social/atproto/commit/cc485d29638488928b5efec3d4b0627040589812)]:
+  - @atproto/xrpc@0.7.0
+  - @atproto/lexicon@0.4.11
+  - @atproto/common@0.4.11
+  - @atproto/crypto@0.4.4
+
+## 0.7.17
+
+### Patch Changes
+
+- [#3765](https://github.com/bluesky-social/atproto/pull/3765) [`45354c84f`](https://github.com/bluesky-social/atproto/commit/45354c84f898d79f58c14b5c0da3661beb7353f9) Thanks [@foysalit](https://github.com/foysalit)! - Expose WebSocketKeepAlive from xrpc-server package
+
+## 0.7.16
+
+### Patch Changes
+
+- [#3789](https://github.com/bluesky-social/atproto/pull/3789) [`da168588d`](https://github.com/bluesky-social/atproto/commit/da168588de59e5048d255866205bd16c5ab5f95c) Thanks [@rafaelbsky](https://github.com/rafaelbsky)! - Ensure safe HTTP code in error middleware
+
+## 0.7.15
+
+### Patch Changes
+
+- Updated dependencies [[`4db923ca1`](https://github.com/bluesky-social/atproto/commit/4db923ca1c4fadd31d41c851933659e5186ee144)]:
+  - @atproto/common@0.4.10
+  - @atproto/lexicon@0.4.10
+  - @atproto/crypto@0.4.4
+  - @atproto/xrpc@0.6.12
+
+## 0.7.14
+
+### Patch Changes
+
+- Updated dependencies [[`bdbd3c3e3`](https://github.com/bluesky-social/atproto/commit/bdbd3c3e3f8fe8476a3fecac73810554846c938f)]:
+  - @atproto/common@0.4.9
+  - @atproto/crypto@0.4.4
+
+## 0.7.13
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/lexicon@0.4.9
+  - @atproto/xrpc@0.6.11
+
+## 0.7.12
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/lexicon@0.4.8
+  - @atproto/xrpc@0.6.10
+
 ## 0.7.11
 
 ### Patch Changes

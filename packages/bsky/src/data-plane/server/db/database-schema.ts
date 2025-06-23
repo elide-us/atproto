@@ -24,6 +24,7 @@ import * as post from './tables/post'
 import * as postAgg from './tables/post-agg'
 import * as postEmbed from './tables/post-embed'
 import * as postgate from './tables/post-gate'
+import * as privateData from './tables/private-data'
 import * as profile from './tables/profile'
 import * as profileAgg from './tables/profile-agg'
 import * as quote from './tables/quote'
@@ -36,6 +37,7 @@ import * as suggestedFollow from './tables/suggested-follow'
 import * as taggedSuggestion from './tables/tagged-suggestion'
 import * as threadgate from './tables/thread-gate'
 import * as threadMute from './tables/thread-mute'
+import * as verification from './tables/verification'
 import * as viewParam from './tables/view-param'
 
 export type DatabaseSchemaType = duplicateRecord.PartialDB &
@@ -75,6 +77,8 @@ export type DatabaseSchemaType = duplicateRecord.PartialDB &
   labeler.PartialDB &
   starterPack.PartialDB &
   taggedSuggestion.PartialDB &
-  quote.PartialDB
+  quote.PartialDB &
+  verification.PartialDB &
+  privateData.PartialDB
 
 export type DatabaseSchema = Kysely<DatabaseSchemaType>

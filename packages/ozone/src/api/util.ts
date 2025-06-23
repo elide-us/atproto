@@ -26,6 +26,7 @@ import {
   ROLEADMIN,
   ROLEMODERATOR,
   ROLETRIAGE,
+  ROLEVERIFIER,
 } from '../lexicon/types/tools/ozone/team/defs'
 import { ModerationSubjectStatusRow } from '../mod-service/types'
 
@@ -36,7 +37,7 @@ export const getPdsAccountInfos = async (
   const results = new Map<string, AccountView | null>()
 
   const agent = ctx.pdsAgent
-  if (!agent) return results
+  if (!agent || !dids.length) return results
 
   const auth = await ctx.pdsAuth(ids.ComAtprotoAdminGetAccountInfos)
   if (!auth) return results
@@ -184,4 +185,9 @@ export const getMemberRole = (role: string) => {
   throw new InvalidRequestError('Invalid member role')
 }
 
-const memberRoles = new Set([ROLEADMIN, ROLEMODERATOR, ROLETRIAGE])
+const memberRoles = new Set([
+  ROLEADMIN,
+  ROLEMODERATOR,
+  ROLETRIAGE,
+  ROLEVERIFIER,
+])

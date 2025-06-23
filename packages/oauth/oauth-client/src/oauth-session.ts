@@ -32,7 +32,6 @@ export class OAuthSession {
   ) {
     this.dpopFetch = dpopFetchWrapper<void>({
       fetch: bindFetch(fetch),
-      iss: server.clientMetadata.client_id,
       key: server.dpopKey,
       supportedAlgs: server.serverMetadata.dpop_signing_alg_values_supported,
       sha256: async (v) => server.runtime.sha256(v),
@@ -99,7 +98,7 @@ export class OAuthSession {
     // This will try and refresh the token if it is known to be expired
     const tokenSet = await this.getTokenSet('auto')
 
-    const initialUrl = new URL(pathname, tokenSet.aud)
+    const initialUrl = new URL(pathname, tokenSet.aud satisfies string)
     const initialAuth = `${tokenSet.token_type} ${tokenSet.access_token}`
 
     const headers = new Headers(init?.headers)
@@ -143,7 +142,7 @@ export class OAuthSession {
     // credentials from the authorization server (e.g. because some migration
     // occurred). Any ways, there is no point in keeping the session.
     if (isInvalidTokenResponse(finalResponse)) {
-      // TODO: Is there a "softer" way to handle this, e.g. by marking the
+      // @TODO Is there a "softer" way to handle this, e.g. by marking the
       // session as "expired" in the session store, allowing the user to trigger
       // a new login (using login_hint)?
       await this.sessionGetter.delStored(

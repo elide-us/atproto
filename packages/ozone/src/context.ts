@@ -28,6 +28,14 @@ import {
   getSigningKeyId,
   parseLabelerHeader,
 } from './util'
+import {
+  VerificationIssuer,
+  VerificationIssuerCreator,
+} from './verification/issuer'
+import {
+  VerificationService,
+  VerificationServiceCreator,
+} from './verification/service'
 
 export type AppContextOptions = {
   db: Database
@@ -49,6 +57,8 @@ export type AppContextOptions = {
   backgroundQueue: BackgroundQueue
   sequencer: Sequencer
   authVerifier: AuthVerifier
+  verificationService: VerificationServiceCreator
+  verificationIssuer: VerificationIssuerCreator
 }
 
 export class AppContext {
@@ -120,9 +130,15 @@ export class AppContext {
     )
 
     const communicationTemplateService = CommunicationTemplateService.creator()
-    const teamService = TeamService.creator()
+    const teamService = TeamService.creator(
+      appviewAgent,
+      cfg.appview.did,
+      createAuthHeaders,
+    )
     const setService = SetService.creator()
     const settingService = SettingService.creator()
+    const verificationService = VerificationService.creator()
+    const verificationIssuer = VerificationIssuer.creator()
 
     const sequencer = new Sequencer(modService(db))
 
@@ -152,6 +168,8 @@ export class AppContext {
         sequencer,
         authVerifier,
         blobDiverter,
+        verificationService,
+        verificationIssuer,
         ...(overrides ?? {}),
       },
       secrets,
@@ -196,6 +214,14 @@ export class AppContext {
 
   get settingService(): SettingServiceCreator {
     return this.opts.settingService
+  }
+
+  get verificationService(): VerificationServiceCreator {
+    return this.opts.verificationService
+  }
+
+  get verificationIssuer(): VerificationIssuerCreator {
+    return this.opts.verificationIssuer
   }
 
   get appviewAgent(): AtpAgent {

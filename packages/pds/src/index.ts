@@ -11,12 +11,8 @@ import cors from 'cors'
 import express from 'express'
 import { HttpTerminator, createHttpTerminator } from 'http-terminator'
 import { DAY, HOUR, MINUTE, SECOND } from '@atproto/common'
-import {
-  Options as XrpcServerOptions,
-  ResponseType,
-  XRPCError,
-} from '@atproto/xrpc-server'
-import API from './api'
+import { RateLimiter, ResponseType, XRPCError } from '@atproto/xrpc-server'
+import apiRoutes from './api'
 import * as authRoutes from './auth-routes'
 import * as basicRoutes from './basic-routes'
 import { ServerConfig, ServerSecrets } from './config'
@@ -37,7 +33,7 @@ export { createSecretKeyObject } from './auth-verifier'
 export { type Handler as SkeletonHandler } from './lexicon/types/app/bsky/feed/getFeedSkeleton'
 export { createServer as createLexiconServer } from './lexicon'
 export * as sequencer from './sequencer'
-export { type PreparedWrite } from './repo'
+export { type CommitDataWithOps, type PreparedWrite } from './repo'
 export * as repoPrepare from './repo/prepare'
 export { scripts } from './scripts'
 
@@ -61,7 +57,9 @@ export class PDS {
   ): Promise<PDS> {
     const ctx = await AppContext.fromConfig(cfg, secrets, overrides)
 
-    const xrpcOpts: XrpcServerOptions = {
+    const { rateLimits } = ctx.cfg
+
+    const server = createServer({
       validateResponse: false,
       payload: {
         jsonLimit: 150 * 1024, // 150kb
@@ -91,9 +89,24 @@ export class PDS {
 
         return XRPCError.fromError(err)
       },
-      rateLimits: ctx.ratelimitCreator
+      rateLimits: rateLimits.enabled
         ? {
-            creator: ctx.ratelimitCreator,
+            creator: ctx.redisScratch
+              ? (opts) => RateLimiter.redis(ctx.redisScratch, opts)
+              : (opts) => RateLimiter.memory(opts),
+            bypass: ({ req }) => {
+              const { bypassKey, bypassIps } = rateLimits
+              if (
+                bypassKey &&
+                bypassKey === req.headers['x-ratelimit-bypass']
+              ) {
+                return true
+              }
+              if (bypassIps && bypassIps.includes(req.ip)) {
+                return true
+              }
+              return false
+            },
             global: [
               {
                 name: 'global-ip',
@@ -115,14 +128,19 @@ export class PDS {
             ],
           }
         : undefined,
-    }
+    })
 
-    let server = createServer(xrpcOpts)
-
-    server = API(server, ctx)
+    apiRoutes(server, ctx)
 
     const app = express()
-    app.set('trust proxy', true)
+    app.set('trust proxy', [
+      // e.g. load balancer
+      'loopback',
+      'linklocal',
+      'uniquelocal',
+      // e.g. trust x-forwarded-for via entryway ip
+      ...getTrustedIps(cfg),
+    ])
     app.use(loggerMiddleware)
     app.use(compression())
     app.use(authRoutes.createRouter(ctx)) // Before CORS
@@ -161,3 +179,8 @@ export class PDS {
 }
 
 export default PDS
+
+const getTrustedIps = (cfg: ServerConfig) => {
+  if (!cfg.rateLimits.enabled) return []
+  return cfg.rateLimits.bypassIps ?? []
+}

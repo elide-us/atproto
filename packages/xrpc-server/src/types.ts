@@ -5,9 +5,10 @@ import { isHttpError } from 'http-errors'
 import { z } from 'zod'
 import {
   ResponseType,
-  ResponseTypeNames,
   ResponseTypeStrings,
   XRPCError as XRPCClientError,
+  httpResponseCodeToName,
+  httpResponseCodeToString,
 } from '@atproto/xrpc'
 
 export type CatchallHandler = (
@@ -28,6 +29,7 @@ export type Options = {
     creator: RateLimiterCreator
     global?: ServerRateLimitDescription[]
     shared?: ServerRateLimitDescription[]
+    bypass?: (ctx: XRPCReqContext) => boolean
   }
   /**
    * By default, errors are converted to {@link XRPCError} using
@@ -147,14 +149,23 @@ export interface RateLimiterI {
   reset: RateLimiterReset
 }
 
+export type RateLimiterConsumeOptions = {
+  calcKey?: CalcKeyFn
+  calcPoints?: CalcPointsFn
+}
+
 export type RateLimiterConsume = (
   ctx: XRPCReqContext,
-  opts?: { calcKey?: CalcKeyFn; calcPoints?: CalcPointsFn },
+  opts?: RateLimiterConsumeOptions,
 ) => Promise<RateLimiterStatus | RateLimitExceededError | null>
+
+export type RateLimiterResetOptions = {
+  calcKey?: CalcKeyFn
+}
 
 export type RateLimiterReset = (
   ctx: XRPCReqContext,
-  opts?: { calcKey?: CalcKeyFn },
+  opts?: RateLimiterResetOptions,
 ) => Promise<void>
 
 export type RateLimiterCreator = (opts: {
@@ -221,6 +232,39 @@ export type XRPCStreamHandlerConfig = {
 
 export { ResponseType }
 
+/**
+ * Converts an upstream XRPC {@link ResponseType} into a downstream {@link ResponseType}.
+ */
+function mapFromClientError(error: XRPCClientError): {
+  error: string
+  message: string
+  type: ResponseType
+} {
+  switch (error.status) {
+    case ResponseType.InvalidResponse:
+      // Upstream server returned an XRPC response that is not compatible with our internal lexicon definitions for that XRPC method.
+      // @NOTE This could be reflected as both a 500 ("we" are at fault) and 502 ("they" are at fault). Let's be gents about it.
+      return {
+        error: httpResponseCodeToName(ResponseType.InternalServerError),
+        message: httpResponseCodeToString(ResponseType.InternalServerError),
+        type: ResponseType.InternalServerError,
+      }
+    case ResponseType.Unknown:
+      // Typically a network error / unknown host
+      return {
+        error: httpResponseCodeToName(ResponseType.InternalServerError),
+        message: httpResponseCodeToString(ResponseType.InternalServerError),
+        type: ResponseType.InternalServerError,
+      }
+    default:
+      return {
+        error: error.error,
+        message: error.message,
+        type: error.status,
+      }
+  }
+}
+
 export class XRPCError extends Error {
   constructor(
     public type: ResponseType,
@@ -229,6 +273,19 @@ export class XRPCError extends Error {
     options?: ErrorOptions,
   ) {
     super(errorMessage, options)
+  }
+
+  get statusCode(): number {
+    const { type } = this
+
+    // Fool-proofing. `new XRPCError(123.5 as number, '')` does not generate a TypeScript error.
+    // Because of this, we can end-up with any numeric value instead of an actual `ResponseType`.
+    // For legacy reasons, the `type` argument is not checked in the constructor, so we check it here.
+    if (type < 400 || type >= 600 || !Number.isFinite(type)) {
+      return 500
+    }
+
+    return type
   }
 
   get payload() {
@@ -242,7 +299,7 @@ export class XRPCError extends Error {
   }
 
   get typeName(): string | undefined {
-    return ResponseTypeNames[this.type]
+    return ResponseType[this.type]
   }
 
   get typeStr(): string | undefined {
@@ -255,7 +312,8 @@ export class XRPCError extends Error {
     }
 
     if (cause instanceof XRPCClientError) {
-      return new XRPCError(cause.status, cause.message, cause.error, { cause })
+      const { error, message, type } = mapFromClientError(cause)
+      return new XRPCError(type, message, error, { cause })
     }
 
     if (isHttpError(cause)) {
@@ -329,13 +387,18 @@ export class AuthRequiredError extends XRPCError {
     customErrorName?: string,
     options?: ErrorOptions,
   ) {
-    super(ResponseType.AuthRequired, errorMessage, customErrorName, options)
+    super(
+      ResponseType.AuthenticationRequired,
+      errorMessage,
+      customErrorName,
+      options,
+    )
   }
 
   [Symbol.hasInstance](instance: unknown): boolean {
     return (
       instance instanceof XRPCError &&
-      instance.type === ResponseType.AuthRequired
+      instance.type === ResponseType.AuthenticationRequired
     )
   }
 }

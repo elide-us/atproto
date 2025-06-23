@@ -7,10 +7,13 @@ import { BackgroundQueue } from '../background'
 import { OzoneConfig, OzoneSecrets } from '../config'
 import { Database } from '../db'
 import { ModerationService } from '../mod-service'
+import { TeamService } from '../team'
 import { getSigningKeyId } from '../util'
 import { EventPusher } from './event-pusher'
 import { EventReverser } from './event-reverser'
 import { MaterializedViewRefresher } from './materialized-view-refresher'
+import { TeamProfileSynchronizer } from './team-profile-synchronizer'
+import { VerificationListener } from './verification-listener'
 
 export type DaemonContextOptions = {
   db: Database
@@ -20,6 +23,8 @@ export type DaemonContextOptions = {
   eventPusher: EventPusher
   eventReverser: EventReverser
   materializedViewRefresher: MaterializedViewRefresher
+  teamProfileSynchronizer: TeamProfileSynchronizer
+  verificationListener?: VerificationListener
 }
 
 export class DaemonContext {
@@ -67,6 +72,16 @@ export class DaemonContext {
       appviewAgent,
       createAuthHeaders,
     )
+    const teamService = TeamService.creator(
+      appviewAgent,
+      cfg.appview.did,
+      createAuthHeaders,
+    )
+    const teamProfileSynchronizer = new TeamProfileSynchronizer(
+      backgroundQueue,
+      teamService(db),
+      cfg.db.teamProfileRefreshIntervalMs,
+    )
 
     const eventReverser = new EventReverser(db, modService)
 
@@ -74,6 +89,16 @@ export class DaemonContext {
       backgroundQueue,
       cfg.db.materializedViewRefreshIntervalMs,
     )
+
+    // Only spawn the listener if verifier config exists and a jetstream URL is provided
+    const verificationListener =
+      cfg.verifier && cfg.jetstreamUrl
+        ? new VerificationListener(
+            db,
+            cfg.jetstreamUrl,
+            cfg.verifier?.issuersToIndex,
+          )
+        : undefined
 
     return new DaemonContext({
       db,
@@ -83,6 +108,8 @@ export class DaemonContext {
       eventPusher,
       eventReverser,
       materializedViewRefresher,
+      teamProfileSynchronizer,
+      verificationListener,
       ...(overrides ?? {}),
     })
   }
@@ -111,16 +138,27 @@ export class DaemonContext {
     return this.opts.materializedViewRefresher
   }
 
+  get teamProfileSynchronizer(): TeamProfileSynchronizer {
+    return this.opts.teamProfileSynchronizer
+  }
+
+  get verificationListener(): VerificationListener | undefined {
+    return this.opts.verificationListener
+  }
+
   async start() {
     this.eventPusher.start()
     this.eventReverser.start()
     this.materializedViewRefresher.start()
+    this.teamProfileSynchronizer.start()
+    this.verificationListener?.start()
   }
 
   async processAll() {
     // Sequential because the materialized view values depend on the events.
     await this.eventPusher.processAll()
     await this.materializedViewRefresher.run()
+    await this.teamProfileSynchronizer.run()
   }
 
   async destroy() {
@@ -129,6 +167,8 @@ export class DaemonContext {
         this.eventReverser.destroy(),
         this.eventPusher.destroy(),
         this.materializedViewRefresher.destroy(),
+        this.teamProfileSynchronizer.destroy(),
+        this.verificationListener?.stop(),
       ])
     } finally {
       await this.backgroundQueue.destroy()

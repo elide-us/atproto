@@ -79,9 +79,13 @@ export class TestBsky {
       modServiceDid: cfg.modServiceDid ?? 'did:example:invalidMod',
       labelsFromIssuerDids: [EXAMPLE_LABELER],
       bigThreadUris: new Set(),
+      maxThreadParents: cfg.maxThreadParents ?? 50,
       disableSsrfProtection: true,
+      threadTagsBumpDown: new Set(),
+      threadTagsHide: new Set(),
       ...cfg,
       adminPasswords: [ADMIN_PASSWORD],
+      etcdHosts: [],
     })
 
     // Separate migration db in case migration changes some connection state that we need in the tests, e.g. "alter database ... set ..."

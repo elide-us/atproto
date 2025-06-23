@@ -1,18 +1,22 @@
 import assert from 'node:assert'
 import * as plc from '@did-plc/lib'
+import express from 'express'
 import { Redis } from 'ioredis'
 import * as nodemailer from 'nodemailer'
+import * as ui8 from 'uint8arrays'
 import * as undici from 'undici'
 import { AtpAgent } from '@atproto/api'
 import { KmsKeypair, S3BlobStore } from '@atproto/aws'
 import * as crypto from '@atproto/crypto'
 import { IdResolver } from '@atproto/identity'
-import { JoseKey, OAuthVerifier } from '@atproto/oauth-provider'
+import {
+  AccessTokenMode,
+  JoseKey,
+  OAuthProvider,
+  OAuthVerifier,
+} from '@atproto/oauth-provider'
 import { BlobStore } from '@atproto/repo'
 import {
-  RateLimiter,
-  RateLimiterCreator,
-  RateLimiterOpts,
   createServiceAuthHeaders,
   createServiceJwt,
 } from '@atproto/xrpc-server'
@@ -23,8 +27,10 @@ import {
   safeFetchWrap,
   unicastLookup,
 } from '@atproto-labs/fetch-node'
-import { AccountManager } from './account-manager'
+import { AccountManager } from './account-manager/account-manager'
+import { OAuthStore } from './account-manager/oauth-store'
 import { ActorStore } from './actor-store/actor-store'
+import { authPassthru, forwardedFor } from './api/proxy'
 import {
   AuthVerifier,
   createPublicKeyObject,
@@ -40,7 +46,6 @@ import { ImageUrlBuilder } from './image/image-url-builder'
 import { fetchLogger } from './logger'
 import { ServerMailer } from './mailer'
 import { ModerationMailer } from './mailer/moderation'
-import { PdsOAuthProvider } from './oauth/provider'
 import { LocalViewer, LocalViewerCreator } from './read-after-write/viewer'
 import { getRedisClient } from './redis'
 import { Sequencer } from './sequencer'
@@ -58,15 +63,15 @@ export type AppContextOptions = {
   sequencer: Sequencer
   backgroundQueue: BackgroundQueue
   redisScratch?: Redis
-  ratelimitCreator?: RateLimiterCreator
   crawlers: Crawlers
   bskyAppView?: BskyAppView
   moderationAgent?: AtpAgent
   reportingAgent?: AtpAgent
   entrywayAgent?: AtpAgent
+  entrywayAdminAgent?: AtpAgent
   proxyAgent: undici.Dispatcher
   safeFetch: Fetch
-  authProvider?: PdsOAuthProvider
+  oauthProvider?: OAuthProvider
   authVerifier: AuthVerifier
   plcRotationKey: crypto.Keypair
   cfg: ServerConfig
@@ -85,16 +90,16 @@ export class AppContext {
   public sequencer: Sequencer
   public backgroundQueue: BackgroundQueue
   public redisScratch?: Redis
-  public ratelimitCreator?: RateLimiterCreator
   public crawlers: Crawlers
   public bskyAppView?: BskyAppView
   public moderationAgent: AtpAgent | undefined
   public reportingAgent: AtpAgent | undefined
   public entrywayAgent: AtpAgent | undefined
+  public entrywayAdminAgent: AtpAgent | undefined
   public proxyAgent: undici.Dispatcher
   public safeFetch: Fetch
   public authVerifier: AuthVerifier
-  public authProvider?: PdsOAuthProvider
+  public oauthProvider?: OAuthProvider
   public plcRotationKey: crypto.Keypair
   public cfg: ServerConfig
 
@@ -111,16 +116,16 @@ export class AppContext {
     this.sequencer = opts.sequencer
     this.backgroundQueue = opts.backgroundQueue
     this.redisScratch = opts.redisScratch
-    this.ratelimitCreator = opts.ratelimitCreator
     this.crawlers = opts.crawlers
     this.bskyAppView = opts.bskyAppView
     this.moderationAgent = opts.moderationAgent
     this.reportingAgent = opts.reportingAgent
     this.entrywayAgent = opts.entrywayAgent
+    this.entrywayAdminAgent = opts.entrywayAdminAgent
     this.proxyAgent = opts.proxyAgent
     this.safeFetch = opts.safeFetch
     this.authVerifier = opts.authVerifier
-    this.authProvider = opts.authProvider
+    this.oauthProvider = opts.oauthProvider
     this.plcRotationKey = opts.plcRotationKey
     this.cfg = opts.cfg
   }
@@ -191,30 +196,6 @@ export class AppContext {
       ? getRedisClient(cfg.redis.address, cfg.redis.password)
       : undefined
 
-    let ratelimitCreator: RateLimiterCreator | undefined = undefined
-    if (cfg.rateLimits.enabled) {
-      const bypassSecret = cfg.rateLimits.bypassKey
-      const bypassIps = cfg.rateLimits.bypassIps
-      if (cfg.rateLimits.mode === 'redis') {
-        if (!redisScratch) {
-          throw new Error('Redis not set up for ratelimiting mode: `redis`')
-        }
-        ratelimitCreator = (opts: RateLimiterOpts) =>
-          RateLimiter.redis(redisScratch, {
-            bypassSecret,
-            bypassIps,
-            ...opts,
-          })
-      } else {
-        ratelimitCreator = (opts: RateLimiterOpts) =>
-          RateLimiter.memory({
-            bypassSecret,
-            bypassIps,
-            ...opts,
-          })
-      }
-    }
-
     const bskyAppView = cfg.bskyAppView
       ? new BskyAppView(cfg.bskyAppView)
       : undefined
@@ -228,6 +209,14 @@ export class AppContext {
     const entrywayAgent = cfg.entryway
       ? new AtpAgent({ service: cfg.entryway.url })
       : undefined
+    let entrywayAdminAgent: AtpAgent | undefined
+    if (cfg.entryway && secrets.entrywayAdminToken) {
+      entrywayAdminAgent = new AtpAgent({ service: cfg.entryway.url })
+      entrywayAdminAgent.api.setHeader(
+        'authorization',
+        basicAuthHeader('admin', secrets.entrywayAdminToken),
+      )
+    }
 
     const jwtSecretKey = createSecretKeyObject(secrets.jwtSecret)
     const jwtPublicKey = cfg.entryway
@@ -245,13 +234,11 @@ export class AppContext {
     })
 
     const accountManager = new AccountManager(
-      actorStore,
-      imageUrlBuilder,
-      backgroundQueue,
-      cfg.db.accountDbLoc,
+      idResolver,
       jwtSecretKey,
       cfg.service.did,
-      cfg.db.disableWalAutoCheckpoint,
+      cfg.identity.serviceHandleDomains,
+      cfg.db,
     )
     await accountManager.migrateOrThrow()
 
@@ -321,23 +308,47 @@ export class AppContext {
       logError: false,
     })
 
-    const authProvider = cfg.oauth.provider
-      ? new PdsOAuthProvider({
+    const oauthProvider = cfg.oauth.provider
+      ? new OAuthProvider({
           issuer: cfg.oauth.issuer,
-          keyset: [
-            // Note: OpenID compatibility would require an RS256 private key in this list
-            await JoseKey.fromKeyLike(jwtSecretKey, undefined, 'HS256'),
-          ],
-          accountManager,
+          keyset: [await JoseKey.fromKeyLike(jwtSecretKey, undefined, 'HS256')],
+          store: new OAuthStore(
+            accountManager,
+            actorStore,
+            imageUrlBuilder,
+            backgroundQueue,
+            mailer,
+            sequencer,
+            plcClient,
+            plcRotationKey,
+            cfg.service.publicUrl,
+            cfg.identity.recoveryDidKey,
+          ),
           redis: redisScratch,
           dpopSecret: secrets.dpopSecret,
-          customization: cfg.oauth.provider.customization,
+          inviteCodeRequired: cfg.invites.required,
+          availableUserDomains: cfg.identity.serviceHandleDomains,
+          hcaptcha: cfg.oauth.provider.hcaptcha,
+          branding: cfg.oauth.provider.branding,
           safeFetch,
+          metadata: {
+            protected_resources: [new URL(cfg.oauth.issuer).origin],
+            scopes_supported: [
+              'transition:email',
+              'transition:generic',
+              'transition:chat.bsky',
+            ],
+          },
+          // If the PDS is both an authorization server & resource server (no
+          // entryway), there is no need to use JWTs as access tokens. Instead,
+          // the PDS can use tokenId as access tokens. This allows the PDS to
+          // always use up-to-date token data from the token store.
+          accessTokenMode: AccessTokenMode.light,
         })
       : undefined
 
     const oauthVerifier: OAuthVerifier =
-      authProvider ?? // OAuthProvider extends OAuthVerifier
+      oauthProvider ?? // OAuthProvider extends OAuthVerifier
       new OAuthVerifier({
         issuer: cfg.oauth.issuer,
         keyset: [await JoseKey.fromKeyLike(jwtPublicKey!, undefined, 'ES256K')],
@@ -374,16 +385,16 @@ export class AppContext {
       sequencer,
       backgroundQueue,
       redisScratch,
-      ratelimitCreator,
       crawlers,
       bskyAppView,
       moderationAgent,
       reportingAgent,
       entrywayAgent,
+      entrywayAdminAgent,
       proxyAgent,
       safeFetch,
       authVerifier,
-      authProvider,
+      oauthProvider,
       plcRotationKey,
       cfg,
       ...(overrides ?? {}),
@@ -393,6 +404,20 @@ export class AppContext {
   async appviewAuthHeaders(did: string, lxm: string) {
     assert(this.bskyAppView)
     return this.serviceAuthHeaders(did, this.bskyAppView.did, lxm)
+  }
+
+  async entrywayAuthHeaders(req: express.Request, did: string, lxm: string) {
+    assert(this.cfg.entryway)
+    const headers = await this.serviceAuthHeaders(
+      did,
+      this.cfg.entryway.did,
+      lxm,
+    )
+    return forwardedFor(req, headers)
+  }
+
+  entrywayPassthruHeaders(req: express.Request) {
+    return forwardedFor(req, authPassthru(req))
   }
 
   async serviceAuthHeaders(did: string, aud: string, lxm: string) {
@@ -415,3 +440,13 @@ export class AppContext {
     })
   }
 }
+
+const basicAuthHeader = (username: string, password: string) => {
+  const encoded = ui8.toString(
+    ui8.fromString(`${username}:${password}`, 'utf8'),
+    'base64pad',
+  )
+  return `Basic ${encoded}`
+}
+
+export default AppContext

@@ -44,8 +44,12 @@
       }
     ],
     "@typescript-eslint/no-unused-vars": [
-      "warn",
-      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }
     ],
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-empty-interface": "off",
@@ -87,6 +91,7 @@
         "project": [
           "tsconfig.json",
           "packages/oauth/*/tsconfig.json",
+          "packages/oauth/*/tsconfig.src.json",
           "packages/internal/*/tsconfig.json",
           "packages/*/tsconfig.json"
         ]

@@ -4,9 +4,11 @@ import { CID } from 'multiformats/cid'
 import {
   AppBskyFeedLike,
   AppBskyFeedPost,
+  AppBskyFeedRepost,
   AppBskyGraphBlock,
   AppBskyGraphFollow,
   AppBskyGraphList,
+  AppBskyGraphVerification,
   AppBskyRichtextFacet,
   AtpAgent,
   ComAtprotoModerationCreateReport,
@@ -83,6 +85,7 @@ export class SeedClient<
   >
   follows: Record<string, Record<string, RecordRef>>
   blocks: Record<string, Record<string, RecordRef>>
+  mutes: Record<string, Set<string>>
   posts: Record<
     string,
     { text: string; ref: RecordRef; images: ImageRef[]; quote?: RecordRef }[]
@@ -113,6 +116,9 @@ export class SeedClient<
       }
     >
   >
+
+  verifications: Record<string, Record<string, AtUri>>
+
   dids: Record<string, string>
 
   constructor(
@@ -123,6 +129,7 @@ export class SeedClient<
     this.profiles = {}
     this.follows = {}
     this.blocks = {}
+    this.mutes = {}
     this.posts = {}
     this.likes = {}
     this.replies = {}
@@ -130,6 +137,7 @@ export class SeedClient<
     this.lists = {}
     this.feedgens = {}
     this.starterpacks = {}
+    this.verifications = {}
     this.dids = {}
   }
 
@@ -293,6 +301,18 @@ export class SeedClient<
     delete this.blocks[from][to]
   }
 
+  async mute(from: string, to: string) {
+    await this.agent.app.bsky.graph.muteActor(
+      {
+        actor: to,
+      },
+      { headers: this.getHeaders(from) },
+    )
+    this.mutes[from] ??= new Set()
+    this.mutes[from].add(to)
+    return this.mutes[from][to]
+  }
+
   async post(
     by: string,
     text: string,
@@ -389,6 +409,7 @@ export class SeedClient<
     text: string,
     facets?: AppBskyRichtextFacet.Main[],
     images?: ImageRef[],
+    overrides?: Partial<AppBskyFeedPost.Record>,
   ) {
     const embed = images
       ? {
@@ -407,6 +428,7 @@ export class SeedClient<
         facets,
         embed,
         createdAt: new Date().toISOString(),
+        ...overrides,
       },
       this.getHeaders(by),
     )
@@ -420,10 +442,18 @@ export class SeedClient<
     return reply
   }
 
-  async repost(by: string, subject: RecordRef) {
+  async repost(
+    by: string,
+    subject: RecordRef,
+    overrides?: Partial<AppBskyFeedRepost.Record>,
+  ) {
     const res = await this.agent.app.bsky.feed.repost.create(
       { repo: by },
-      { subject: subject.raw, createdAt: new Date().toISOString() },
+      {
+        subject: subject.raw,
+        createdAt: new Date().toISOString(),
+        ...overrides,
+      },
       this.getHeaders(by),
     )
     this.reposts[by] ??= []
@@ -553,6 +583,42 @@ export class SeedClient<
       },
     )
     return result.data
+  }
+
+  async verify(
+    by: string,
+    subject: string,
+    handle: string,
+    displayName: string,
+    overrides?: Partial<AppBskyGraphVerification.Record>,
+  ) {
+    const res = await this.agent.app.bsky.graph.verification.create(
+      { repo: by },
+      {
+        subject,
+        createdAt: new Date().toISOString(),
+        handle,
+        displayName,
+        ...overrides,
+      },
+      this.getHeaders(by),
+    )
+    this.verifications[by] ??= {}
+    this.verifications[by][subject] = new AtUri(res.uri)
+    return this.verifications[by][subject]
+  }
+
+  async unverify(by: string, subject: string) {
+    const verification = this.verifications[by]?.[subject]
+    if (!verification) {
+      throw new Error('verification does not exist')
+    }
+
+    await this.agent.app.bsky.graph.verification.delete(
+      { repo: by, rkey: verification.rkey },
+      this.getHeaders(by),
+    )
+    delete this.verifications[by][subject]
   }
 
   getHeaders(did: string) {

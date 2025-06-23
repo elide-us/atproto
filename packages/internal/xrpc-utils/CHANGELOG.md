@@ -1,5 +1,72 @@
 # @atproto-labs/xrpc-utils
 
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [[`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`b675fbbf1`](https://github.com/bluesky-social/atproto/commit/b675fbbf17e000fad2b38a52db550702830a807d), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c), [`0286f7ee3`](https://github.com/bluesky-social/atproto/commit/0286f7ee3d56ae50cfe0b70add60cf4785587b3c)]:
+  - @atproto/xrpc-server@0.8.0
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [[`9214bd017`](https://github.com/bluesky-social/atproto/commit/9214bd01705381aed6b5bde2900d6dc5486b6e9f)]:
+  - @atproto/xrpc-server@0.7.19
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [[`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`f36ab48d9`](https://github.com/bluesky-social/atproto/commit/f36ab48d910fc4a3afcd22138ba014c814beb93b), [`b5afb723b`](https://github.com/bluesky-social/atproto/commit/b5afb723be392d236799bbcb6a55956bd12316ba)]:
+  - @atproto/xrpc@0.7.0
+  - @atproto/xrpc-server@0.7.18
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [[`45354c84f`](https://github.com/bluesky-social/atproto/commit/45354c84f898d79f58c14b5c0da3661beb7353f9)]:
+  - @atproto/xrpc-server@0.7.17
+
+## 0.0.12
+
+### Patch Changes
+
+- Updated dependencies [[`da168588d`](https://github.com/bluesky-social/atproto/commit/da168588de59e5048d255866205bd16c5ab5f95c)]:
+  - @atproto/xrpc-server@0.7.16
+
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/xrpc-server@0.7.15
+  - @atproto/xrpc@0.6.12
+
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/xrpc-server@0.7.14
+
+## 0.0.9
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/xrpc@0.6.11
+  - @atproto/xrpc-server@0.7.13
+
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @atproto/xrpc@0.6.10
+  - @atproto/xrpc-server@0.7.12
+
 ## 0.0.7
 
 ### Patch Changes

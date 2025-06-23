@@ -1,7 +1,12 @@
 import { sql } from 'kysely'
-import { AtpAgent } from '@atproto/api'
-import { dedupeStrs } from '@atproto/common'
+import {
+  AppBskyActorDefs,
+  AtpAgent,
+  ComAtprotoRepoGetRecord,
+} from '@atproto/api'
+import { chunkArray, dedupeStrs } from '@atproto/common'
 import { Keypair } from '@atproto/crypto'
+import { IdResolver } from '@atproto/identity'
 import { BlobRef } from '@atproto/lexicon'
 import { AtUri, INVALID_HANDLE, normalizeDatetimeAlways } from '@atproto/syntax'
 import { Database } from '../db'
@@ -47,7 +52,7 @@ import {
   ModerationEventRowWithHandle,
   ModerationSubjectStatusRowWithHandle,
 } from './types'
-import { formatLabel, signLabel } from './util'
+import { formatLabel, getPdsAgentForRepo, signLabel } from './util'
 
 const isValidSelfLabels = asPredicate(validateSelfLabels)
 
@@ -72,6 +77,8 @@ export class ModerationViews {
     private signingKeyId: number,
     private appviewAgent: AtpAgent,
     private appviewAuth: (method: string) => Promise<AuthHeaders>,
+    public idResolver: IdResolver,
+    public devMode?: boolean,
   ) {}
 
   async getAccoutInfosByDid(dids: string[]): Promise<Map<string, AccountView>> {
@@ -79,7 +86,7 @@ export class ModerationViews {
     const auth = await this.appviewAuth(ids.ComAtprotoAdminGetAccountInfos)
     if (!auth) return new Map()
     try {
-      const res = await this.appviewAgent.api.com.atproto.admin.getAccountInfos(
+      const res = await this.appviewAgent.com.atproto.admin.getAccountInfos(
         {
           dids: dedupeStrs(dids),
         },
@@ -266,6 +273,10 @@ export class ModerationViews {
     labelers?: ParsedLabelers,
   ): Promise<Map<string, RepoView>> {
     const results = new Map<string, RepoView>()
+    if (!dids.length) {
+      return results
+    }
+
     const [repos, localLabels, externalLabels] = await Promise.all([
       this.repos(dids),
       this.labels(dids),
@@ -290,28 +301,56 @@ export class ModerationViews {
     return results
   }
 
+  async fetchRecord(
+    params: ComAtprotoRepoGetRecord.QueryParams,
+    appviewAuth: AuthHeaders,
+  ) {
+    try {
+      const record = await this.appviewAgent.com.atproto.repo.getRecord(
+        params,
+        appviewAuth,
+      )
+      return record
+    } catch (err) {
+      if (err instanceof ComAtprotoRepoGetRecord.RecordNotFoundError) {
+        // If pds fetch fails, just return null regardless of the error
+        try {
+          const { agent: pdsAgent } = await getPdsAgentForRepo(
+            this.idResolver,
+            params.repo,
+            this.devMode,
+          )
+          if (!pdsAgent) {
+            return null
+          }
+
+          const record = await pdsAgent.com.atproto.repo.getRecord(params)
+          return record
+        } catch (error) {
+          return null
+        }
+      }
+
+      return null
+    }
+  }
+
   async fetchRecords(
     subjects: RecordSubject[],
   ): Promise<Map<string, RecordInfo>> {
-    const auth = await this.appviewAuth(ids.ComAtprotoRepoGetRecord)
-    if (!auth) return new Map()
+    const appviewAuth = await this.appviewAuth(ids.ComAtprotoRepoGetRecord)
+    if (!appviewAuth) return new Map()
+
     const fetched = await Promise.all(
       subjects.map(async (subject) => {
         const uri = new AtUri(subject.uri)
-        try {
-          const record = await this.appviewAgent.api.com.atproto.repo.getRecord(
-            {
-              repo: uri.hostname,
-              collection: uri.collection,
-              rkey: uri.rkey,
-              cid: subject.cid,
-            },
-            auth,
-          )
-          return record
-        } catch {
-          return null
+        const params = {
+          repo: uri.hostname,
+          collection: uri.collection,
+          rkey: uri.rkey,
+          cid: subject.cid,
         }
+        return this.fetchRecord(params, appviewAuth)
       }),
     )
     return fetched.reduce((acc, cur) => {
@@ -373,6 +412,11 @@ export class ModerationViews {
     subjects: RecordSubject[],
     labelers?: ParsedLabelers,
   ): Promise<Map<string, RecordViewDetail>> {
+    const results = new Map<string, RecordViewDetail>()
+    if (!subjects.length) {
+      return results
+    }
+
     const subjectUris = subjects.map((s) => s.uri)
     const [records, subjectStatusesResult, localLabels, externalLabels] =
       await Promise.all([
@@ -381,8 +425,6 @@ export class ModerationViews {
         this.labels(subjectUris),
         this.getExternalLabels(subjectUris, labelers),
       ])
-
-    const results = new Map<string, RecordViewDetail>()
 
     await Promise.all(
       Array.from(records.entries()).map(async ([uri, record]) => {
@@ -425,7 +467,7 @@ export class ModerationViews {
     try {
       const {
         data: { labels },
-      } = await this.appviewAgent.api.com.atproto.label.queryLabels({
+      } = await this.appviewAgent.com.atproto.label.queryLabels({
         uriPatterns: subjects,
         sources: labelers.dids,
       })
@@ -537,10 +579,14 @@ export class ModerationViews {
     subjects: string[],
     includeNeg?: boolean,
   ): Promise<Map<string, Label[]>> {
+    const now = new Date().toISOString()
     const labels = new Map<string, Label[]>()
     const res = await this.db.db
       .selectFrom('label')
       .where('label.uri', 'in', subjects)
+      .where((qb) =>
+        qb.where('label.exp', 'is', null).orWhere('label.exp', '>', now),
+      )
       .if(!includeNeg, (qb) => qb.where('neg', '=', false))
       .selectAll()
       .execute()
@@ -695,9 +741,26 @@ export class ModerationViews {
     if (!auth) return []
     const {
       data: { feed },
-    } = await this.appviewAgent.api.app.bsky.feed.getAuthorFeed({ actor }, auth)
+    } = await this.appviewAgent.app.bsky.feed.getAuthorFeed({ actor }, auth)
 
     return feed
+  }
+
+  async getProfiles(dids: string[]) {
+    const profiles = new Map<string, AppBskyActorDefs.ProfileViewDetailed>()
+
+    const auth = await this.appviewAuth(ids.AppBskyActorGetProfiles)
+    if (!auth) return profiles
+
+    for (const actors of chunkArray(dids, 25)) {
+      const { data } = await this.appviewAgent.getProfiles({ actors }, auth)
+
+      data.profiles.forEach((profile) => {
+        profiles.set(profile.did, profile)
+      })
+    }
+
+    return profiles
   }
 }
 
